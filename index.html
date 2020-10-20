@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>G20 comparison</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom styles for this template -->
+  <link href="css/scrolling-nav.css" rel="stylesheet">
+
+</head>
+
+<body id="page-top">
+
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="mainNav">
+    <div class="container">
+      <a class="navbar-brand js-scroll-trigger" href="#page-top">Home</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <a class="nav-link js-scroll-trigger" href="#about">About</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link js-scroll-trigger" href="#services">Analysis</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link js-scroll-trigger" href="#contact">References</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <header class="bg-primary text-white">
+    <div class="container text-center">
+      <h1>Educational, healthcare, and military spending analysis</h1>
+      <p class="lead">DATS 6401 Individual Project (Fall semester 2020)</p>
+    </div>
+  </header>
+
+  <section id="about">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-8 mx-auto">
+          <h2>About this project</h2>
+          <p class="lead">The aim of this project is to perform an in-depth analysis of 
+            educational, healthcare, and military expenditure using Google Visualization API:</p>
+          <ul>
+            <li>Data set used covers time period from 2013-2017</li>
+            <li>Data is centered around G20 countries</li>
+            <li>Charts below depict the following relationships:</li>
+            <ol>
+              <li>Comparing spending data to that country's GDP</li>
+              <li>Comparing the education and health to the overall military spending of the country</li>
+              <li>Comparing the per person educational/healthcare/military spending to the per person GDP</li>
+              <li>Fastest growing countries in healthcare and educational spending in fixed value and in percentage</li>
+            </ol>
+            <li>Analysis and Conclusion</li>
+            <li>References</li>
+          </ul>
+
+          <ul>
+            <li>Some points worth mentioning about the data set:</li>
+            <ol>
+              <li>Although South Korea is part of G20 countries but it was removed from our data set because of missing data values so that is why it will not show up in any graphs below (except for population chart)</li>
+              <li>Despite my best efforts and research, educational data for G20 countries was not easily available on web so almost half of values in educational graphs are based on interpolation</li>
+              <li>France, Italy and Germany are part of European Union but their individual data values have also been displayed in figures below</li>
+            </ol>
+          </ul>
+
+          <script src='https://www.gstatic.com/charts/loader.js'></script>    <!-- defining source for google charts-->
+          <script>
+            google.charts.load('current', {'packages': ['corechart', 'geochart', 'imagelinechart'],
+            'mapsApiKey': 'AIzaSyCuwvnjxFvsCKft-0Y6d0Vfow-6h5Yz_5U'
+            }); // loads google Visualization API corechart for us
+    
+            google.charts.setOnLoadCallback(drawAllSheets); // // Set a callback to run when the Google Visualization API is loaded.
+    
+            /* using data directly by querying google spreadsheet on server */
+            function drawAllSheets(){
+                drawSheetName('population', 'SELECT A,X', populationGeoResponseHandler);
+                drawSheetName('population', 'SELECT A,P,Q,R,S,T', populationResponseHandler); 
+                drawSheetName('health', 'SELECT A,P,Q,R,S,T', healthResponseHandler); 
+                drawSheetName('education', 'SELECT A,F,G,H,I,J', educationResponseHandler);
+                drawSheetName('military', 'SELECT A,P,Q,R,S,T', militaryResponseHandler);
+                drawSheetName('mean_5years', 'SELECT A,B,C,D', militaryVsHealthEducationResponseHandler);
+                drawSheetName('per_person', 'SELECT A,B,E', perPersonHealthGDPResponseHandler);
+                drawSheetName('per_person', 'SELECT A,C,E', perPersonEducationGDPResponseHandler);
+                drawSheetName('per_person', 'SELECT A,D,E', perPersonMilitaryGDPResponseHandler);
+                drawSheetName('fastest_percent', 'SELECT A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T', fastestHealthPercentageResponseHandler);
+                drawSheetName('fastest_percent', 'SELECT V,W,X,Y,Z,AA,AB,AC,AD,AE,AF,AG,AH,AI,AJ,AK,AL,AM,AN,AO', fastestEducationPercentageResponseHandler);
+                drawSheetName('fastest_abs', 'SELECT A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T', fastestHealthAbsResponseHandler);
+                drawSheetName('fastest_abs', 'SELECT V,W,X,Y,Z,AA,AB,AC,AD,AE,AF,AG,AH,AI,AJ,AK,AL,AM,AN,AO', fastestEducationAbsResponseHandler);
+            } //drawAllSheets
+    
+            function drawSheetName(sheetName, query, responseHandler){
+                var queryString = encodeURIComponent(query);
+                var query = new google.visualization.Query(
+                    'https://docs.google.com/spreadsheets/d/1S9dRpXuxlnBZDGBHjsVx2L_y3eDEywM76OiW_5EkzHc/gviz/tq?sheet='
+                    + sheetName + '&headers=1&tq=' + queryString);
+                
+                query.send(responseHandler);
+            } //drawSheetName
+
+            function populationGeoResponseHandler(response){
+              var data = response.getDataTable();
+              data.sort({column:1, desc:true});
+
+              var options = {
+                colorAxis: {colors: ['#00FF00', '#0000FF', '#800000']},  // green> blue> red
+                title: 'Geochart of G20 countries (color coded based on population in 2017)'
+              };
+
+            var chart = new google.visualization.GeoChart(document.getElementById('populationGeo_div'));
+            chart.draw(data, options);
+          } //populationGeoResponseHandler
+    
+            function populationResponseHandler(response){
+                var data = response.getDataTable();
+                data.sort({column:1, desc:true});
+    
+                var options = {
+                    vAxis: {title: 'Population'},
+                    hAxis: {title: 'Country'},
+                    title: 'G20 countries population from 2013-2017',
+                    animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+                };
+
+               
+
+                var formatter = new google.visualization.NumberFormat(
+                    {pattern: '###,###,###'});
+                    formatter.format(data, 1);
+                    formatter.format(data, 2);
+                    formatter.format(data, 3);
+                    formatter.format(data, 4);
+                    formatter.format(data, 5);
+    
+                var chart = new google.visualization.ColumnChart(document.getElementById('population_div'));
+                chart.draw(data, options);
+            } //populationResponseHandler
+
+
+            function healthResponseHandler(response){
+                var data = response.getDataTable();
+                data.sort({column:5, desc:true});
+    
+                var options = {
+                    vAxis: {title: 'Country'},
+                    hAxis: {title: 'Health expense as % of GDP'},
+                    title: 'Health expense as % of GDP of G20 countries from 2013-2017',
+                    colors: ['#009B77', '#FF6F61', '#F7CAC9', '#92A8D1', '#B565A7'],
+                    bars: 'horizontal',
+                    isStacked: true,
+                    annotations: {alwaysOutside: true},
+                    animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+                };
+
+                var chart = new google.visualization.BarChart(document.getElementById('health_div'));
+                chart.draw(data, options);
+            } //healthResponseHandler
+
+            function educationResponseHandler(response){
+                var data = response.getDataTable();
+                data.sort({column:5, desc:true});
+    
+                var options = {
+                    vAxis: {title: 'Country'},
+                    hAxis: {title: 'Education expense as % of GDP'},
+                    title: 'Education expense as % of GDP of G20 countries from 2013-2017',
+                    colors: ['#009B77', '#FF6F61', '#F7CAC9', '#92A8D1', '#B565A7'],
+                    bars: 'horizontal',
+                    isStacked: true,
+                    annotations: {alwaysOutside: true},
+                    animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+                };
+
+                var chart = new google.visualization.BarChart(document.getElementById('education_div'));
+                chart.draw(data, options);
+            } //educationResponseHandler
+
+            function militaryResponseHandler(response){
+                var data = response.getDataTable();
+                data.sort({column:5, desc:true});
+    
+                var options = {
+                    vAxis: {title: 'Country'},
+                    hAxis: {title: 'Military expense as % of GDP'},
+                    title: 'Military expense as % of GDP of G20 countries from 2013-2017',
+                    colors: ['#009B77', '#FF6F61', '#F7CAC9', '#92A8D1', '#B565A7'],
+                    bars: 'horizontal',
+                    isStacked: true,
+                    annotations: {alwaysOutside: true},
+                    animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+                };
+
+                var chart = new google.visualization.BarChart(document.getElementById('military_div'));
+                chart.draw(data, options);
+            } //educationResponseHandler
+
+            
+            function militaryVsHealthEducationResponseHandler(response){
+                var data = response.getDataTable();
+                data.sort({column:3, desc:true});
+    
+                var options = {
+                    title: 'Correlation between average Health, Education ' +
+                          'and Military expenditures of top G20 countries (2013-2017)',
+                    hAxis: {title: 'Health as % of GDP'},
+                    vAxis: {title: 'Education as % of GDP'},
+                    bubble: {textStyle: {fontSize: 11}},
+                    // colors: ['purple'],
+                    colorAxis: {colors: ['#fff6da', '#942250']},
+                    sizeAxis: {maxSize: 20},
+                    animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+                  };
+
+                var chart = new google.visualization.BubbleChart(document.getElementById('militaryVsHealthEdu_div'));
+                    chart.draw(data, options);
+
+            } //militaryVsHealthEducationResponseHandler
+
+
+            function perPersonHealthGDPResponseHandler(response){
+                var data = response.getDataTable();
+                data.sort({column:1, desc:true});
+
+                var options = {
+                    title: 'Per person health spending to the per person GDP',
+                    hAxis: {title: 'G20 Countries'},
+                    vAxis: {title: 'Per person health & GDP values ($)'},
+                    legend: {position: 'right', textStyle: {fontSize: 16}},
+                    animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+                    };
+
+                var chart = new google.visualization.ScatterChart(document.getElementById('perPersonHealthGDP_div'));
+
+                chart.draw(data, options);
+        
+           } //perPersonHealthGDPResponseHandler
+
+           function perPersonEducationGDPResponseHandler(response){
+                var data = response.getDataTable();
+                data.sort({column:1, desc:true});
+
+                var options = {
+                    title: 'Per person education spending to the per person GDP',
+                    hAxis: {title: 'G20 Countries'},
+                    vAxis: {title: 'Per person education & GDP values ($)'},
+                    legend: {position: 'right', textStyle: {fontSize: 16}},
+                    animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+                    };
+
+                var chart = new google.visualization.ScatterChart(document.getElementById('perPersonEducationGDP_div'));
+
+                chart.draw(data, options);
+        
+           } //perPersonEducationDPResponseHandler
+
+           function perPersonMilitaryGDPResponseHandler(response){
+                var data = response.getDataTable();
+                data.sort({column:1, desc:true});
+
+                var options = {
+                    title: 'Per person military spending to the per person GDP',
+                    hAxis: {title: 'G20 Countries'},
+                    vAxis: {title: 'Per person military & GDP values ($)'},
+                    legend: {position: 'right', textStyle: {fontSize: 16}},
+                    animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+                    };
+
+                var chart = new google.visualization.ScatterChart(document.getElementById('perPersonMilitaryGDP_div'));
+
+                chart.draw(data, options);
+        
+           } //perPersonMilitaryDPResponseHandler
+
+           function fastestHealthPercentageResponseHandler(response){
+            var data = response.getDataTable();
+
+            var options = {
+              title: 'Growth Rate in healthcare in %',
+              curveType: 'linear',
+              legend: { position: 'bottom' },
+              hAxis: {title: 'Year'},
+              vAxis: {title: 'Percentage of GDP spent on healthcare'},
+              animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+      //         vAxis: {
+      //       scaleType: 'log'
+      // }
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('fastestHealthPercentage_div'));
+            chart.draw(data, options);
+           } //fastestHealthPercentageResponseHandler
+
+           
+           function fastestEducationPercentageResponseHandler(response){
+            var data = response.getDataTable();
+
+            var options = {
+              title: 'Growth Rate in education in %',
+              curveType: 'linear',
+              legend: { position: 'bottom' },
+              hAxis: {title: 'Year'},
+              vAxis: {title: 'Percentage of GDP spent on education'},
+              animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+      //         vAxis: {
+      //       scaleType: 'log'
+      // }
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('fastestEducationPercentage_div'));
+            chart.draw(data, options);
+           } //fastestEducationPercentageResponseHandler
+
+           
+           function fastestHealthAbsResponseHandler(response){
+            var data = response.getDataTable();
+
+            var options = {
+              title: 'Growth Rate in health in absolute terms',
+              curveType: 'linear',
+              legend: { position: 'bottom' },
+              hAxis: {title: 'Year'},
+              vAxis: {title: 'Absolute value spent on health ($)', format: 'short'},
+              animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('fastestHealthAbs_div'));
+            chart.draw(data, options);
+           } //fastestHealthAbsResponseHandler
+
+           
+           function fastestEducationAbsResponseHandler(response){
+            var data = response.getDataTable();
+
+            var options = {
+              title: 'Growth Rate in education in absolute terms',
+              curveType: 'linear',
+              legend: { position: 'bottom' },
+              hAxis: {title: 'Year'},
+              vAxis: {title: 'Absolute value spent on education ($)', format: 'short'},
+              animation: {
+                          duration: 1500,
+                          startup: true
+                      }
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('fastestEducationAbs_div'));
+            chart.draw(data, options);
+           } //fastestEducationAbsResponseHandler
+
+          </script>     
+          <div id="populationGeo_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring first chart-->
+          <div id="population_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring second chart-->
+          <div id="health_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring third chart-->
+          <div id="education_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring fourth chart-->
+          <div id="military_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring fifth chart-->
+          <div id="militaryVsHealthEdu_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring sixth chart-->
+          <div id="perPersonHealthGDP_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring seventh chart-->
+          <div id="perPersonEducationGDP_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring eighth chart-->
+          <div id="perPersonMilitaryGDP_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring ninth chart-->
+          <div id="fastestHealthPercentage_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring tenth chart-->
+          <div id="fastestEducationPercentage_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring 11th chart-->
+          <div id="fastestHealthAbs_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring 12th chart-->
+          <div id="fastestEducationAbs_div" style="width: 900px; height: 500px;"></div>  <!-- anchoring 13th chart-->
+
+          
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="services" class="bg-light">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-8 mx-auto">
+          <h2>Analysis and Conclusion</h2>
+          <p class="lead">The following information was explored after studying the visualizations created above.</p>
+          <ul>
+            <li>Population:</li>
+            <ol>
+              <li>China and India are the most populous countries whereas South Korea and Australia are the least populous among G20 coutries between 2013-2017</li>
+            </ol>
+          </ul>
+          <ul>
+            <li>Health Expense as Percentage of GDP:</li>
+            <ol>
+              <li>Out of all G20 countries, United States spends the highest percentage of its GDP on healthcare, followed by France and Germany</li>
+              <li>On the other hand, Turkey, India and Indonesia respectively spend the lowest percentage of their GDPs on healthcare</li>
+            </ol>
+          </ul>
+          <ul>
+            <li>Education Expense as Percentage of GDP:</li>
+            <ol>
+              <li>Canada spent the highest percentage of its GDP on education, followed by Brazil and South Africa</li>
+              <li>On the other hand, Japan, India and Indonesia respectively spent the lowest percentage of their GDPs on education sector</li>
+            </ol>
+          </ul>
+          <ul>
+            <li>Military Expense as Percentage of GDP:</li>
+            <ol>
+              <li>Saudi Arabia stands at the top as the highest spender of its GDP in military department, followed by Russian and United States respectively</li>
+              <li>On the other hand, Argentina, Indonesia and Mexico respectively spent the lowest percentages of their GDPs in military</li>
+            </ol> 
+          </ul>
+          <ul>
+            <li>Education and Health to the overall Military spending of the country:</li>
+            <ol>
+              <li>Mean of five year values were used here. Darker bubbles represent higher military spending</li>
+              <li>Starting from right hand side, we first encounter USA as highest spender in health but relatively average spender on education</li>
+              <li>On the top Canada stands as highest spender in education and relatively higher to average spender in health</li>
+              <li>We see (mostly) asian countries clustered in bottom right corner that spend lower budgets in their health and education sectors. Saudi Arabia, highlighed in darkest mode color depicts highest expenditures in military sector</li>
+              <li>We have another cluster of (mostly) european countries slightly right from middle of graph depicting medium to high spendings in health and education departments</li>
+            </ol> 
+          </ul>
+          <ul>
+            <li>Per person Health, Education and Military spending to per person GDP:</li>
+            <ol>
+              <li>Per person GDP expenditure is highest for Australia at $58,167</li>
+              <li>Per person healthcare spending, USA is at the top with $9,502 and India is at the bottom with $60</li>
+              <li>Per person education spending, Canada is at the top with $5,720 and India is at the bottom with $61</li>
+              <li>Per person military spending, Saudi Arabia is at the top with $2,342 and Indonesia is at the bottom with $29</li>
+            </ol> 
+          </ul>
+          <ul>
+            <li>Fastest growing countries in healthcare and educational spending in percentage:</li>
+            <ol>
+              <li>The slope of these lines indicate the growth rate</li>
+              <li>If we look at the lines for health closely, Brazil (orange line) shows highest growth rate of approx 1.49%. On the other hand, Mexico (purple line) shows a negative growth rate (-0.4%)</li>
+              <li>For education, USA shows the highest growth rate. Japan shows negative growth rate</li>
+            </ol> 
+          </ul>
+          <ul>
+            <li>Fastest growing countries in healthcare and educational spending in absolute:</li>
+            <ol>
+              <li>The slope of these lines indicate the growth rate</li>
+              <li>It is much easier to see that for health, USA (green line) shows highest growth rate in absolute monetary terms whereas European Union (pink line) has negative growth rate</li>
+              <li>For education, again USA (green line) has the fastest growth rate while European Union (pink line) has negative growth rate</li>
+            </ol> 
+          </ul>
+
+
+          
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-8 mx-auto">
+          <h2>References</h2>
+          <p class="lead">Learning material and data set for this project was acquired from the following resources:</p>
+          <ul>
+            <li>Professor Nima Zahadat, PhD lecture slides and lecture codes</li>
+            <li>Data Set Source</li>
+            <ol>
+              <li><a href="https://data.worldbank.org/indicator/SE.XPD.TOTL.GD.ZS?end=2019&start=1993">Education</a></li>
+              <li><a href="https://data.worldbank.org/indicator/SH.XPD.CHEX.GD.ZS">Health</a></li>
+              <li><a href="https://data.worldbank.org/indicator/MS.MIL.XPND.GD.ZS">Military</a></li>
+              <li><a href="https://g20.org/en/about/Pages/whatis.aspx">G20 countries</a></li>
+              <li><a href="http://data.uis.unesco.org/#">Unesco</a></li>
+              <li><a href="https://data.worldbank.org/indicator/NY.GDP.MKTP.CD">GDP</a></li>
+              <li><a href="https://data.worldbank.org/indicator/SP.POP.TOTL">Population</a></li>
+            </ol>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-5 bg-dark">
+    <div class="container">
+      <p class="m-0 text-center text-white">Copyright &copy; Amna's Website 2020</p>
+    </div>
+    <!-- /.container -->
+  </footer>
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Plugin JavaScript -->
+  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+  <!-- Custom JavaScript for this theme -->
+  <script src="js/scrolling-nav.js"></script>
+
+</body>
+
+</html>
